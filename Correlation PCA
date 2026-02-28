@@ -1,0 +1,40 @@
+print("CORRELATION PCA")
+
+# Standardize the data (z-score normalization) for correlation PCA
+scaler = StandardScaler()
+X_standardized = scaler.fit_transform(X_transformed)
+
+# Perform PCA
+pca_corr = PCA()
+pc_scores_corr = pca_corr.fit_transform(X_standardized)
+
+# Eigenvalues
+eigenvalues_corr = pca_corr.explained_variance_
+print("\nEigenvalues:")
+for i, ev in enumerate(eigenvalues_corr[:7]):  # Show the eigenvalues of the 7 PCs
+    print(f"  PC{i+1}: {ev:.4f}")
+
+# Explained variance
+explained_var_corr = pca_corr.explained_variance_ratio_
+print("\nExplained Variance Ratio:")
+for i, var in enumerate(explained_var_corr[:7]):  # Show the 7 PCs explaining total variance
+    print(f"  PC{i+1}: {var*100:.2f}%")
+cumulative = sum(explained_var_corr[:2])
+print(f"\n  Cumulative (PC1-PC2): {cumulative*100:.2f}%")
+
+# Loadings (correlation between original variables and PCs)
+loadings_corr = pca_corr.components_.T
+loadings_df_corr = pd.DataFrame(
+    loadings_corr,
+    columns=[f'PC{i+1}' for i in range(len(transformed_vars))],
+    index=transformed_vars
+)
+
+print("\nPCA Loadings (first 7 PCs):")
+display(loadings_df_corr.iloc[:, :7].round(4))
+
+# Add PC scores to dataframe
+df_transformed['PC1_corr'] = pc_scores_corr[:, 0]
+df_transformed['PC2_corr'] = pc_scores_corr[:, 1]
+if pc_scores_corr.shape[1] > 2:
+    df_transformed['PC3_corr'] = pc_scores_corr[:, 2]
