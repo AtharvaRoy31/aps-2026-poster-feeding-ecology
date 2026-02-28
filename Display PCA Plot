@@ -1,0 +1,74 @@
+# Define colours for each Taxa
+Taxa_colours = {
+    'Ankylosaurid': "#d703f8",
+    'Nodosaurid': "#ff7b00",
+    'Pachycephalosaurid': '#4daf4a',
+    'Troodontid': "#008cff",
+    'Dromaeosaurid': "#ff0004",
+    'Tyrannosaurid': "#F9E002",
+    'Thescelosaurid': "#173317"
+}
+
+# Get actual families in your data and assign colors
+actual_taxa = df_transformed['Taxa'].unique()
+taxa_colour_map = {}
+for Taxa in actual_taxa:
+    if Taxa in Taxa_colours:
+        taxa_colour_map[Taxa] = Taxa_colours[Taxa]
+    else:
+        # Assign default color if not in predefined list
+        taxa_colour_map[Taxa] = f"C{len(taxa_colour_map)}"
+
+fig, ax = plt.subplots(figsize=(12, 10))
+
+# Plot each family with different colors
+for taxa in taxa_colour_map:
+    mask = df_transformed['Taxa'] == taxa
+    ax.scatter(df_transformed.loc[mask, 'PC1_corr'],
+               df_transformed.loc[mask, 'PC2_corr'],
+               c=taxa_colour_map[taxa], label=taxa, s=100, alpha=0.7, 
+               edgecolors='black', linewidth=1.5)
+    
+    #  Add convex hull for each family                                               
+    points = df_transformed.loc[mask, ['PC1_corr', 'PC2_corr']].values
+    if len(points) >= 3:
+        try:
+            hull = ConvexHull(points)
+            for simplex in hull.simplices:
+                ax.plot(points[simplex, 0], points[simplex, 1],
+                       c=taxa_colour_map[taxa], alpha=0.3, linewidth=2)
+            # Fill the hull
+            hull_points = points[hull.vertices]
+            ax.fill(hull_points[:, 0], hull_points[:, 1],
+                   c=taxa_colour_map[taxa], alpha=0.1)
+        except:
+            # Skip hull if points are collinear
+            pass
+
+# Plot eigenvectors (loadings) as arrows
+arrow_scale = 6.0  # Adjust this if arrows are too long/short
+
+for i, var in enumerate(transformed_vars):
+    ax.annotate('', xy=(loadings_corr[i, 0] * arrow_scale, loadings_corr[i, 1] * arrow_scale),
+                xytext=(0, 0),
+                arrowprops=dict(arrowstyle='->', color='black', lw=2))
+    
+    # Simplify variable names for plot (remove 'log_' prefix)
+    var_name = var.replace('log_', '')
+    ax.text(loadings_corr[i, 0] * arrow_scale * 1.2,
+            loadings_corr[i, 1] * arrow_scale * 1.2,
+            var_name, fontsize=10, fontweight='bold', ha='center',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+
+# Labels and formatting
+ax.set_xlabel(f'PC1 ({explained_var_corr[0]*100:.1f}% variance)', fontsize=13, fontweight='bold')
+ax.set_ylabel(f'PC2 ({explained_var_corr[1]*100:.1f}% variance)', fontsize=13, fontweight='bold')
+ax.set_title('Correlation PCA graph',
+             fontsize=14, fontweight='bold')
+ax.axhline(y=0, color='gray', linestyle='--', linewidth=0.5)
+ax.axvline(x=0, color='gray', linestyle='--', linewidth=0.5)
+ax.legend(loc='best', fontsize=9)
+ax.set_aspect('equal', adjustable='box')
+
+plt.tight_layout()
+plt.show()
