@@ -1,0 +1,39 @@
+# Create a copy for transformation
+df_transformed = df.copy()
+
+# Size-related variables (linear measurements) - divide by CBL
+size_variables = ['CBW', 'AL', 'CH', 'MCL', 'MCW']
+
+# Non-size variables (densities and ratios) - do not divide by CBL
+non_size_variables = ['MDD', 'DDD', 'CBR']
+
+# Only include variables that exist in the dataset
+available_size_vars = [var for var in size_variables if var in df.columns]         
+available_nonsize_vars = [var for var in non_size_variables if var in df.columns] 
+
+# Size standardize size-related variables (divide by CBL) 
+for var in available_size_vars:
+    df_transformed[f'{var}_ratio'] = df[var] / df['CBL']
+
+# Keep non-size variables the same
+for var in available_nonsize_vars:
+    df_transformed[f'{var}_ratio'] = df[var]
+
+# Log-transform all variables
+all_available_vars = available_size_vars + available_nonsize_vars
+for var in all_available_vars:
+    ratio_col = f'{var}_ratio'
+    # Check for positive values before log transform
+    if df_transformed[ratio_col].min() > 0:
+        df_transformed[f'log_{var}'] = np.log(df_transformed[ratio_col])
+    else:
+        print(f"Warning: {var} contains non-positive values, skipping log transform")
+
+log_cols = [f'log_{var}' for var in all_available_vars if f'log_{var}' in df_transformed.columns]
+
+# Extract transformed data for PCA
+transformed_vars = log_cols
+X_transformed = df_transformed[transformed_vars].values
+
+# Print out number of variables for PCA  
+print(f"Variables for Correlation PCA: {len(transformed_vars)} variables")
