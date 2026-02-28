@@ -1,0 +1,17 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from scipy.spatial import ConvexHull
+
+# For displaying dataframes 
+from IPython.display import display
+
+# Plot styling
+plt.rcParams['figure.figsize'] = (10, 8)
+plt.rcParams['font.size'] = 12
+sns.set_style('whitegrid')
+
+print("All libraries imported successfully!")
