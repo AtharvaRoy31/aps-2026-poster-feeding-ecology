@@ -1,0 +1,90 @@
+print("PERMANOVA")
+
+def permanova_test(X, grouping, permutations=9999):
+    """
+    PERMANOVA using Euclidean distances.
+    Returns pseudo-F statistic and p-value.
+    """
+    dist_matrix = squareform(pdist(X, metric='euclidean'))
+    groups = np.array(grouping)
+    n = len(groups)
+    
+    def pseudo_f(dist_sq, grps):
+        unique_groups = np.unique(grps)
+        N = len(grps)
+        a = len(unique_groups)
+        
+        # Total sum of squares
+        SS_T = np.sum(dist_sq) / N
+        
+        # Within-group sum of squares
+        SS_W = 0
+        for g in unique_groups:
+            idx = np.where(grps == g)[0]
+            n_g = len(idx)
+            if n_g > 1:
+                sub = dist_sq[np.ix_(idx, idx)]
+                SS_W += np.sum(sub) / n_g
+        
+        SS_A = SS_T - SS_W
+        df_A = a - 1
+        df_W = N - a
+        
+        if SS_W == 0 or df_W == 0:
+            return np.nan
+        return (SS_A / df_A) / (SS_W / df_W)
+    
+    dist_sq = dist_matrix ** 2
+    observed_f = pseudo_f(dist_sq, groups)
+    
+    # Permutation test
+    count = 0
+    for _ in range(permutations):
+        perm_groups = np.random.permutation(groups)
+        perm_f = pseudo_f(dist_sq, perm_groups)
+        if perm_f >= observed_f:
+            count += 1
+    
+    p_value = (count + 1) / (permutations + 1)
+    return observed_f, p_value
+
+
+# --- Global PERMANOVA ---
+grouping = df_transformed['Taxa'].reset_index(drop=True).values
+obs_f, p_val = permanova_test(X_standardized, grouping, permutations=9999)
+
+print("\n=== PERMANOVA Results ===")
+print(f"Test statistic (pseudo-F): {obs_f:.4f}")
+print(f"p-value (9999 permutations): {p_val:.4f}")
+
+if p_val < 0.05:
+    print("\n→ Significant difference in multivariate morphospace among taxa (p < 0.05)")
+else:
+    print("\n→ No significant difference detected among taxa (p ≥ 0.05)")
+
+
+# --- Pairwise PERMANOVA ---
+print("\n=== Pairwise PERMANOVA (all taxon pairs) ===")
+
+taxa_list = df_transformed['Taxa'].unique()
+pairwise_results = []
+
+for taxa1, taxa2 in combinations(taxa_list, 2):
+    mask = df_transformed['Taxa'].isin([taxa1, taxa2]).values
+    sub_X = X_standardized[mask]
+    sub_grouping = df_transformed.loc[mask, 'Taxa'].values
+    
+    if len(np.unique(sub_grouping)) < 2 or len(sub_grouping) < 4:
+        continue  # Skip if too few samples
+    
+    f_stat, p = permanova_test(sub_X, sub_grouping, permutations=9999)
+    pairwise_results.append({
+        'Taxa 1': taxa1,
+        'Taxa 2': taxa2,
+        'pseudo-F': round(f_stat, 4),
+        'p-value': round(p, 4),
+        'significant': '*' if p < 0.05 else 'ns'
+    })
+
+pairwise_df = pd.DataFrame(pairwise_results)
+display(pairwise_df)
