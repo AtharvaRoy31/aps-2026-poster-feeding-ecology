@@ -1,0 +1,24 @@
+df = pd.read_csv('PCA data file - Sheet1.csv')
+
+# Column mapping
+column_mapping = {
+    'FABL/CBL (mm)': 'CBL',
+    'CBW (mm)': 'CBW',
+    'AL (mm)': 'AL',
+    'CH (mm)': 'CH',
+    'MCL (mm)': 'MCL',
+    'MCW (mm)': 'MCW',
+    'MDD(per 5mm)': 'MDD',
+    'DDD (per 5mm)': 'DDD',
+    'CBR': 'CBR',
+    'Taxa': 'Taxa'
+}
+
+# Applies mapping
+df.rename(columns=column_mapping, inplace=True)                   
+
+print(f"Total samples: {len(df)}") # Print total number of samples
+print(f"\nColumns in dataset:")   
+print(list(df.columns))
+print(f"\nSamples per taxa:")   # List number of samples per taxa
+print(df['Taxa'].value_counts())      
